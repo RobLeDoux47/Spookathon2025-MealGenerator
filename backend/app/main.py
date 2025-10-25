@@ -64,6 +64,23 @@ async def health_check():
     return {"status": "healthy", "version": settings.VERSION}
 
 
+@app.get("/test-frontend")
+async def test_frontend():
+    """Test endpoint for frontend integration"""
+    return {
+        "message": "Backend is ready for frontend integration!",
+        "endpoints": {
+            "generate_recipe": "POST /api/v1/recipes/generate-simple",
+            "docs": "/docs"
+        },
+        "example_request": {
+            "ingredients": ["chicken", "rice", "broccoli"],
+            "meal_type": "dinner",
+            "servings": 2
+        }
+    }
+
+
 if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",

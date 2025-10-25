@@ -67,6 +67,35 @@ class Recipe(RecipeBase):
         from_attributes = True
 
 
+# Frontend-compatible schemas
+class RecipeMacros(BaseModel):
+    calories: float
+    protein: float
+    carbs: float
+    fat: float
+
+
+class FrontendRecipe(BaseModel):
+    name: str
+    servings: int
+    macros: RecipeMacros
+    ingredients: List[str]
+    instructions: List[str]
+    id: Optional[int] = None
+    description: Optional[str] = None
+    prep_time_minutes: Optional[int] = None
+    cook_time_minutes: Optional[int] = None
+    difficulty: Optional[str] = None
+    cuisine_type: Optional[str] = None
+
+
+class UserInfo(BaseModel):
+    height: str
+    weight: str
+    heightUnit: str  # 'metric' | 'imperial'
+    weightUnit: str   # 'metric' | 'imperial'
+
+
 class MealGenerationRequest(BaseModel):
     available_ingredients: List[int]  # ingredient IDs
     meal_type: str  # "breakfast", "lunch", "dinner", "snack"

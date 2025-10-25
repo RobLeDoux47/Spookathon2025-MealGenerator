@@ -3,13 +3,17 @@ from sqlalchemy.orm import Session
 from typing import List
 from ..core.database import get_db
 from ..models.recipe import Recipe, RecipeIngredient
+from ..models.ingredient import Ingredient
 from ..models.user import User
 from ..schemas.recipe import (
     Recipe as RecipeSchema,
     RecipeCreate,
     RecipeUpdate,
     MealGenerationRequest,
-    MealGenerationResponse
+    MealGenerationResponse,
+    FrontendRecipe,
+    RecipeMacros,
+    UserInfo
 )
 from ..api.deps import get_current_active_user
 from ..services.meal_generation import MealGenerationService
@@ -126,3 +130,126 @@ def generate_meal(
 ):
     meal_service = MealGenerationService(db)
     return meal_service.generate_meal(request, current_user)
+
+
+# Frontend-compatible endpoints
+@router.post("/generate-frontend", response_model=FrontendRecipe)
+def generate_meal_frontend(
+    ingredients: List[str],
+    user_info: UserInfo,
+    meal_type: str = "dinner",
+    servings: int = 1,
+    db: Session = Depends(get_db)
+):
+    """Generate a recipe for the frontend with the expected data format"""
+    meal_service = MealGenerationService(db)
+    
+    # Convert ingredient names to IDs (simplified - in real app you'd search the database)
+    ingredient_ids = []
+    for ingredient_name in ingredients:
+        # Find or create ingredient
+        ingredient = db.query(Ingredient).filter(
+            Ingredient.name.ilike(f"%{ingredient_name}%")
+        ).first()
+        if ingredient:
+            ingredient_ids.append(ingredient.id)
+        else:
+            # Create new ingredient
+            new_ingredient = Ingredient(
+                name=ingredient_name,
+                category="unknown",
+                calories=0,
+                protein=0,
+                carbs=0,
+                fat=0
+            )
+            db.add(new_ingredient)
+            db.commit()
+            db.refresh(new_ingredient)
+            ingredient_ids.append(new_ingredient.id)
+    
+    # Create meal generation request
+    request = MealGenerationRequest(
+        available_ingredients=ingredient_ids,
+        meal_type=meal_type,
+        servings=servings
+    )
+    
+    # Generate the recipe
+    result = meal_service.generate_meal(request, None)  # No user required for this endpoint
+    
+    # Convert to frontend format
+    recipe = result.recipe
+    
+    # Calculate macros
+    macros = RecipeMacros(
+        calories=recipe.calories_per_serving or 0,
+        protein=recipe.protein_per_serving or 0,
+        carbs=recipe.carbs_per_serving or 0,
+        fat=recipe.fat_per_serving or 0
+    )
+    
+    # Extract ingredient names
+    ingredient_names = [ing.ingredient.name for ing in recipe.ingredients]
+    
+    # Split instructions into array
+    instructions = recipe.instructions.split('\n') if recipe.instructions else []
+    
+    return FrontendRecipe(
+        id=recipe.id,
+        name=recipe.name,
+        servings=recipe.servings,
+        macros=macros,
+        ingredients=ingredient_names,
+        instructions=instructions,
+        description=recipe.description,
+        prep_time_minutes=recipe.prep_time_minutes,
+        cook_time_minutes=recipe.cook_time_minutes,
+        difficulty=recipe.difficulty,
+        cuisine_type=recipe.cuisine_type
+    )
+
+
+# Simple endpoint for frontend integration
+@router.post("/generate-simple", response_model=FrontendRecipe)
+def generate_simple_recipe(
+    ingredients: List[str],
+    meal_type: str = "dinner",
+    servings: int = 1,
+    db: Session = Depends(get_db)
+):
+    """Simple recipe generation endpoint for frontend testing"""
+    
+    # Create a simple recipe without AI for now
+    recipe_name = f"{meal_type.title()} with {', '.join(ingredients[:2])}"
+    
+    # Simple macros calculation (placeholder)
+    base_calories = 300 + (len(ingredients) * 50)
+    macros = RecipeMacros(
+        calories=base_calories,
+        protein=base_calories * 0.25 / 4,  # 25% protein
+        carbs=base_calories * 0.5 / 4,     # 50% carbs  
+        fat=base_calories * 0.25 / 9      # 25% fat
+    )
+    
+    # Simple instructions
+    instructions = [
+        f"Prepare your ingredients: {', '.join(ingredients)}",
+        f"Cook the {ingredients[0] if ingredients else 'main ingredient'}",
+        f"Add the remaining ingredients",
+        "Season to taste",
+        "Serve hot and enjoy!"
+    ]
+    
+    return FrontendRecipe(
+        name=recipe_name,
+        servings=servings,
+        macros=macros,
+        ingredients=ingredients,
+        instructions=instructions,
+        description=f"A delicious {meal_type} made with your available ingredients",
+        prep_time_minutes=15,
+        cook_time_minutes=20,
+        difficulty="easy",
+        cuisine_type="international"
+    )
