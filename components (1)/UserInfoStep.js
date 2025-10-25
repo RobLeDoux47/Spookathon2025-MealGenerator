@@ -5,18 +5,12 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User } from 'lucide-react';
-import type { UserInfo } from '../App';
 import chefBackground from 'figma:asset/5719fda1f59b5916b318e53848af5c4c572dca37.png';
 
-type Props = {
-  onSubmit: (data: UserInfo) => void;
-  initialData: UserInfo;
-};
-
-export function UserInfoStep({ onSubmit, initialData }: Props) {
+export function UserInfoStep({ onSubmit, initialData }) {
   const [weight, setWeight] = useState(initialData.weight);
-  const [heightUnit, setHeightUnit] = useState<'metric' | 'imperial'>(initialData.heightUnit);
-  const [weightUnit, setWeightUnit] = useState<'metric' | 'imperial'>(initialData.weightUnit);
+  const [heightUnit, setHeightUnit] = useState(initialData.heightUnit);
+  const [weightUnit, setWeightUnit] = useState(initialData.weightUnit);
   
   // For imperial: store feet and inches separately
   const [feet, setFeet] = useState('');
@@ -41,7 +35,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
   }, []);
 
   // When height unit changes, convert the height
-  const handleHeightUnitChange = (newUnit: 'metric' | 'imperial') => {
+  const handleHeightUnitChange = (newUnit) => {
     if (newUnit === 'metric' && heightUnit === 'imperial') {
       // Convert feet + inches to cm
       const totalInches = (parseFloat(feet || '0') * 12) + parseFloat(inches || '0');
@@ -59,7 +53,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
   };
 
   // When weight unit changes, convert the weight
-  const handleWeightUnitChange = (newUnit: 'metric' | 'imperial') => {
+  const handleWeightUnitChange = (newUnit) => {
     if (weight) {
       if (newUnit === 'metric' && weightUnit === 'imperial') {
         // Convert lbs to kg
@@ -74,7 +68,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
     setWeightUnit(newUnit);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     let heightValue = '';
@@ -119,7 +113,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
                     value={heightCm}
                     onChange={(e) => setHeightCm(e.target.value)}
                     required
-                    className="flex-1"
+                    className="flex-1 text-[rgb(10,10,10)]"
                   />
                 ) : (
                   <>
@@ -146,7 +140,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
                     />
                   </>
                 )}
-                <Select value={heightUnit} onValueChange={(value) => handleHeightUnitChange(value as 'metric' | 'imperial')}>
+                <Select value={heightUnit} onValueChange={(value) => handleHeightUnitChange(value)}>
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>
@@ -170,7 +164,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
                   required
                   className="flex-1 text-[rgb(48,39,39)]"
                 />
-                <Select value={weightUnit} onValueChange={(value) => handleWeightUnitChange(value as 'metric' | 'imperial')}>
+                <Select value={weightUnit} onValueChange={(value) => handleWeightUnitChange(value)}>
                   <SelectTrigger className="w-24">
                     <SelectValue />
                   </SelectTrigger>

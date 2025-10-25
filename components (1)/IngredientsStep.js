@@ -6,14 +6,8 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { ChefHat, X } from 'lucide-react';
 
-type Props = {
-  onSubmit: (ingredients: string[]) => void;
-  onBack: () => void;
-  initialIngredients: string[];
-};
-
-export function IngredientsStep({ onSubmit, onBack, initialIngredients }: Props) {
-  const [ingredients, setIngredients] = useState<string[]>(initialIngredients);
+export function IngredientsStep({ onSubmit, onBack, initialIngredients }) {
+  const [ingredients, setIngredients] = useState(initialIngredients);
   const [currentIngredient, setCurrentIngredient] = useState('');
 
   const handleAddIngredient = () => {
@@ -23,18 +17,18 @@ export function IngredientsStep({ onSubmit, onBack, initialIngredients }: Props)
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddIngredient();
     }
   };
 
-  const handleRemoveIngredient = (index: number) => {
+  const handleRemoveIngredient = (index) => {
     setIngredients(ingredients.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (ingredients.length > 0) {
       onSubmit(ingredients);

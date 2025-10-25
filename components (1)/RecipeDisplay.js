@@ -3,16 +3,8 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Flame, Scale, TrendingUp, Droplet, RefreshCw } from 'lucide-react';
-import type { Recipe, UserInfo } from '../App';
 
-type Props = {
-  recipe: Recipe;
-  userInfo: UserInfo;
-  ingredients: string[];
-  onReset: () => void;
-};
-
-export function RecipeDisplay({ recipe, userInfo, ingredients, onReset }: Props) {
+export function RecipeDisplay({ recipe, userInfo, ingredients, onReset }) {
   // Calculate BMI for context
   const calculateBMI = () => {
     let heightNum = parseFloat(userInfo.height);
