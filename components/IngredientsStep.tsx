@@ -48,7 +48,7 @@ export function IngredientsStep({ onSubmit, onBack, initialIngredients }: Props)
 
   return (
     <Card className="w-full shadow-lg">
-      <CardHeader>
+      <CardHeader className="bg-[rgba(105,81,81,0.26)]">
         <div className="flex items-center gap-2 mb-2">
           <div className="p-2 bg-emerald-100 rounded-lg">
             <ChefHat className="w-5 h-5 text-emerald-600" />
@@ -61,7 +61,7 @@ export function IngredientsStep({ onSubmit, onBack, initialIngredients }: Props)
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-6">
-          <div className="space-y-2">
+          <div className="space-y-2 bg-[rgba(0,0,0,0)]">
             <Label htmlFor="ingredient">Add Ingredient</Label>
             <div className="flex gap-2">
               <Input

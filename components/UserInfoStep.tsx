@@ -6,6 +6,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { User } from 'lucide-react';
 import type { UserInfo } from '../App';
+import chefBackground from 'figma:asset/5719fda1f59b5916b318e53848af5c4c572dca37.png';
 
 type Props = {
   onSubmit: (data: UserInfo) => void;
@@ -91,23 +92,24 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
   };
 
   return (
-    <Card className="w-full shadow-lg">
-      <CardHeader>
-        <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="p-2 bg-emerald-100 rounded-lg">
-            <User className="w-5 h-5 text-emerald-600" />
+    <Card className="w-full shadow-lg relative overflow-hidden min-h-[600px] bg-gray-900 flex flex-col">
+      <div className="relative z-10 flex flex-col flex-1">
+        <CardHeader>
+          <div className="flex items-center justify-center gap-2 mb-2 bg-[rgba(0,0,0,0)]">
+            <div className="p-2 bg-[rgb(21,9,38)] rounded-lg">
+              <User className="w-5 h-5 text-emerald-600" />
+            </div>
+            <CardTitle className="text-[rgb(169,169,211)]">Step 1: Your Information</CardTitle>
           </div>
-          <CardTitle>Step 1: Your Information</CardTitle>
-        </div>
-        <CardDescription>
-          Tell us about yourself to help us calculate your nutritional needs
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="height">Height</Label>
+          <CardDescription>
+            Enter your info and to help ChefBot prepare to cook
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1">
+          <CardContent className="space-y-6 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2 bg-[rgba(151,69,69,0)]">
+                <Label htmlFor="height">Height</Label>
               <div className="flex gap-2">
                 {heightUnit === 'metric' ? (
                   <Input
@@ -166,7 +168,7 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-1 text-[rgb(48,39,39)]"
                 />
                 <Select value={weightUnit} onValueChange={(value) => handleWeightUnitChange(value as 'metric' | 'imperial')}>
                   <SelectTrigger className="w-24">
@@ -179,14 +181,21 @@ export function UserInfoStep({ onSubmit, initialData }: Props) {
                 </Select>
               </div>
             </div>
+            </div>
+          </CardContent>
+          <div className="flex justify-center py-4">
+            <div 
+              className="w-48 h-48 bg-center bg-no-repeat bg-contain opacity-20"
+              style={{ backgroundImage: `url(${chefBackground})` }}
+            />
           </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 mt-4">
-            Continue to Ingredients
-          </Button>
-        </CardFooter>
-      </form>
+          <CardFooter className="mt-auto">
+            <Button type="submit" className="w-full bg-[rgb(153,61,0)] hover:bg-emerald-700 px-[16px] py-[20px]">
+              Continue to Ingredients
+            </Button>
+          </CardFooter>
+        </form>
+      </div>
     </Card>
   );
 }
