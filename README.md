@@ -1,2 +1,13 @@
 # Spookathon2025-MealGenerator
+AI meal generator, taking ingredients entered in in you're house and  generating meals to fit nutritiion goals.
+
+# Spookathon2025-MealGenerator
 AI meal generator, taking ingredients entered in in you're house and generating meals to fit nutritiion goals.
+# Example usage:
+# Enter your available ingredients and nutrition goal, and let the AI suggest meals!
+# 
+# Example:
+# ingredients = ['chicken', 'rice', 'broccoli', 'eggs']
+# nutrition_goal = 'high protein, low carb'
+# meals = generate_meals(ingredients, nutrition_goal)
+# print(meals)
