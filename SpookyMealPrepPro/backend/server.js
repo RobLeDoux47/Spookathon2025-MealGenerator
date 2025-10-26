@@ -44,7 +44,21 @@ app.post('/api/recipes', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: height, weight, goal' });
     }
 
-    // Compose prompt for the model
+    // NEW: clean + validate pantry; reject empty/blank lists
+    const rawPantry = Array.isArray(pantry) ? pantry : [];
+    const cleanedPantry = rawPantry
+      .filter(x => typeof x === 'string')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (cleanedPantry.length === 0) {
+      return res.status(400).json({ error: 'Add at least one pantry item' });
+    }
+
+    // Optional: dedupe and cap for quality
+    const pantryForModel = [...new Set(cleanedPantry)].slice(0, 50);
+
+    // Compose prompt for the model (use ONLY validated pantry; no fallbacks)
     const prompt = `
 You are a certified nutritionist and chef. Generate 3 Halloween-themed meal recipes using ONLY items from the pantry list whenever possible, and simple staples if absolutely needed.
 
@@ -53,13 +67,17 @@ Constraints:
 - Respect spice preference and available appliances
 - Output JSON only (no markdown).
 
+Rules:
+- Do not invent ingredients that are not in the pantry unless they are universal staples (salt, pepper, water, oil).
+- If the pantry is insufficient, keep recipes extremely simple rather than adding new ingredients.
+
 For each meal include:
 - "title": normal title
-- "spookyName": a Halloween pun title (e.g., "Ghoul-ash", "Witch’s Skillet")
+- "spookyName": a Halloween pun title
 - "timeMinutes": realistic estimate
 - "calories": total kcal
 - "macros": { "protein_g", "carbs_g", "fat_g" }
-- "ingredients": list of { "name", "amount" } (use pantry items first)
+- "ingredients": list of { "name", "amount" } (prefer pantry items)
 - "steps": 5–8 numbered steps (concise, appliance-aware)
 
 User details:
@@ -68,10 +86,10 @@ User details:
 - weight: ${weight}
 - goal: ${goal}
 - activity: ${activity}
-- pantry: ${Array.isArray(pantry)? pantry.join(', ') : pantry}
-- prefs: ${JSON.stringify(prefs)}
+- pantry: ${pantryForModel.join(', ')}
+- prefs: ${JSON.stringify(prefs || {})}
 - spice: ${spice}
-- appliances: ${Array.isArray(appliances)? appliances.join(', ') : appliances}
+- appliances: ${Array.isArray(appliances)? appliances.join(', ') : (appliances || '')}
     `.trim();
 
     // Ask for JSON back. We parse response.output_text as JSON.
@@ -79,56 +97,6 @@ User details:
       model: 'gpt-4o-mini',
       instructions: 'You output clean, strict JSON and follow nutrition best-practices. Theme is Halloween.',
       input: prompt,
-      // If your account supports it, you can uncomment the schema enforcement below.
-      // response_format: {
-      //   type: 'json_schema',
-      //   json_schema: {
-      //     name: 'meal_plan',
-      //     schema: {
-      //       type: 'object',
-      //       properties: {
-      //         meals: {
-      //           type: 'array',
-      //           items: {
-      //             type: 'object',
-      //             properties: {
-      //               title: { type: 'string' },
-      //               spookyName: { type: 'string' },
-      //               timeMinutes: { type: 'number' },
-      //               calories: { type: 'number' },
-      //               macros: {
-      //                 type: 'object',
-      //                 properties: {
-      //                   protein_g: { type: 'number' },
-      //                   carbs_g: { type: 'number' },
-      //                   fat_g: { type: 'number' }
-      //                 },
-      //                 required: ['protein_g','carbs_g','fat_g'],
-      //                 additionalProperties: false
-      //               },
-      //               ingredients: {
-      //                 type: 'array',
-      //                 items: {
-      //                   type: 'object',
-      //                   properties: { name: { type: 'string' }, amount: { type: 'string' } },
-      //                   required: ['name','amount'],
-      //                   additionalProperties: false
-      //                 }
-      //               },
-      //               steps: { type: 'array', items: { type: 'string' }, minItems: 3 }
-      //             },
-      //             required: ['title','spookyName','timeMinutes','calories','macros','ingredients','steps'],
-      //             additionalProperties: false
-      //           },
-      //           minItems: 3, maxItems: 6
-      //         }
-      //       },
-      //       required: ['meals'],
-      //       additionalProperties: false
-      //     },
-      //     strict: true
-      //   }
-      // }
     });
 
     let jsonText = response.output_text;

@@ -19,6 +19,7 @@ export default function App(){
   const [activity, setActivity] = useState('moderate')
 
   const [pantryText, setPantryText] = useState('chicken, rice, broccoli, olive oil, onion, tomato, eggs, oats, milk, beans, avocado')
+  // Clean + trim: this is exactly what we submit
   const pantry = useMemo(()=> pantryText.split(/,|\n/).map(s=>s.trim()).filter(Boolean), [pantryText])
 
   const [prefs, setPrefs] = useState({ vegetarian:false, vegan:false, dairyFree:false, glutenFree:false })
@@ -29,8 +30,19 @@ export default function App(){
   const [error, setError] = useState('')
   const [meals, setMeals] = useState([])
 
+  // NEW: UX guard
+  const canSubmit = pantry.length > 0 && !loading
+
   async function generate(){
-    setLoading(true); setError('')
+    setError('')
+
+    // Block empty/blank pantry on the client (server still validates)
+    if (pantry.length === 0) {
+      setError('Add at least one ingredient to your pantry before generating recipes.')
+      return
+    }
+
+    setLoading(true)
     try{
       const resp = await fetch(`${API_BASE}/api/recipes`, {
         method: 'POST',
@@ -105,8 +117,20 @@ export default function App(){
         <section className="grid md:grid-cols-2 gap-4">
           <div className="glass rounded-2xl p-4 grid gap-3">
             <h2 className="title text-xl">Pantry</h2>
-            <textarea className="w-full h-32 p-3 rounded-xl bg-white border border-gray-300" value={pantryText} onChange={e=>setPantryText(e.target.value)}></textarea>
-            <p className="text-sm opacity-80">Tip: separate by commas or new lines. The AI will try to prefer these items.</p>
+            <textarea
+              className="w-full h-32 p-3 rounded-xl bg-white border border-gray-300"
+              value={pantryText}
+              onChange={e=>setPantryText(e.target.value)}
+              aria-invalid={pantry.length === 0}
+              aria-describedby="pantry-help pantry-error"
+            />
+            <div className="text-xs flex items-center gap-3">
+              <p id="pantry-help" className="opacity-80">Tip: separate by commas or new lines. The AI will try to prefer these items.</p>
+              <span className="ml-auto opacity-70">{pantry.length} item{pantry.length!==1?'s':''}</span>
+            </div>
+            {pantry.length === 0 && (
+              <p id="pantry-error" className="text-sm text-red-600">Add at least one ingredient.</p>
+            )}
           </div>
 
           <div className="glass rounded-2xl p-4 grid gap-3">
@@ -140,7 +164,13 @@ export default function App(){
                 </div>
               </div>
             </div>
-            <button onClick={generate} disabled={loading} className="px-4 py-3 rounded-2xl font-black text-white" style={{background:'var(--primary)'}}>
+            <button
+              onClick={generate}
+              disabled={!canSubmit}
+              className={"px-4 py-3 rounded-2xl font-black text-white " + (!canSubmit ? "opacity-60 cursor-not-allowed" : "")}
+              style={{background:'var(--primary)'}}
+              title={!canSubmit ? "Add at least one pantry item" : "Generate recipes"}
+            >
               {loading ? 'Generating...' : 'Generate AI Recipes 🥗'}
             </button>
             {error && <div className="text-sm text-red-600">{error}</div>}
