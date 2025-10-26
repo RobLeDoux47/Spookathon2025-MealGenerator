@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 
+// Point this to your backend in dev: VITE_API_BASE=http://localhost:8787
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8787'
 
 function Stat({label, value}){
@@ -19,7 +20,6 @@ export default function App(){
   const [activity, setActivity] = useState('moderate')
 
   const [pantryText, setPantryText] = useState('chicken, rice, broccoli, olive oil, onion, tomato, eggs, oats, milk, beans, avocado')
-  // Clean + trim: this is exactly what we submit
   const pantry = useMemo(()=> pantryText.split(/,|\n/).map(s=>s.trim()).filter(Boolean), [pantryText])
 
   const [prefs, setPrefs] = useState({ vegetarian:false, vegan:false, dairyFree:false, glutenFree:false })
@@ -30,13 +30,25 @@ export default function App(){
   const [error, setError] = useState('')
   const [meals, setMeals] = useState([])
 
-  // NEW: UX guard
+  // Auto-scroll target
+  const recipesRef = useRef(null)
+
+  // Auto-scroll when meals appear
+  useEffect(() => {
+    if (meals.length > 0 && recipesRef.current) {
+      recipesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      const h2 = recipesRef.current.querySelector('h2')
+      if (h2) {
+        h2.setAttribute('tabindex', '-1')
+        h2.focus()
+      }
+    }
+  }, [meals.length])
+
   const canSubmit = pantry.length > 0 && !loading
 
   async function generate(){
     setError('')
-
-    // Block empty/blank pantry on the client (server still validates)
     if (pantry.length === 0) {
       setError('Add at least one ingredient to your pantry before generating recipes.')
       return
@@ -47,22 +59,23 @@ export default function App(){
       const resp = await fetch(`${API_BASE}/api/recipes`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ unitSystem, height, weight, goal, activity, pantry, prefs, spice, appliances })
+        body: JSON.stringify({ unitSystem, height, weight, goal, activity, pantry, prefs, spice, appliances }),
       })
       if(!resp.ok){
         const t = await resp.json().catch(()=>({error:resp.statusText}))
-        throw new Error(t.error || 'Server error')
+        throw new Error(t.error || `Server error (${resp.status})`)
       }
       const data = await resp.json()
       setMeals(data.meals || [])
     }catch(e){
+      // Typical browser message is "TypeError: Failed to fetch" for CORS/network
       setError(String(e.message||e))
+      console.error('Request failed:', e)
     }finally{
       setLoading(false)
     }
   }
 
-  // very lightweight BMI/TDEE (client-side preview only)
   const metric = useMemo(()=>{
     const valH = Number(height)||0, valW = Number(weight)||0
     if(unitSystem==='metric') return { cm: valH, kg: valW }
@@ -192,7 +205,11 @@ export default function App(){
         </div>
 
         {meals.length>0 && (
-          <section className="glass rounded-2xl p-4 grid gap-4">
+          <section
+            ref={recipesRef}
+            style={{ scrollMarginTop: 90 }}
+            className="glass rounded-2xl p-4 grid gap-4"
+          >
             <h2 className="title text-xl">Today's Meal Plan</h2>
             <div className="grid md:grid-cols-3 gap-4">
               {meals.map((m,i)=> (

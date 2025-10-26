@@ -5,8 +5,20 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 
 const app = express();
-app.use(cors());
+
+// Allow your Vite dev server origin (adjust if you open Vite on 127.0.0.1)
+const allowedOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true,
+  methods: ['GET','POST','OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+app.options('*', cors()); // explicit preflight handling
 app.use(express.json({ limit: '1mb' }));
+
+app.get('/health', (_req, res) => res.json({ ok: true }));
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -39,12 +51,12 @@ app.post('/api/recipes', async (req, res) => {
       pantry, prefs, spice, appliances
     } = req.body || {};
 
-    // Basic input validation
+    // Basic required fields
     if (!height || !weight || !goal) {
       return res.status(400).json({ error: 'Missing required fields: height, weight, goal' });
     }
 
-    // NEW: clean + validate pantry; reject empty/blank lists
+    // Clean + validate pantry; reject empty/blank lists
     const rawPantry = Array.isArray(pantry) ? pantry : [];
     const cleanedPantry = rawPantry
       .filter(x => typeof x === 'string')
@@ -55,10 +67,10 @@ app.post('/api/recipes', async (req, res) => {
       return res.status(400).json({ error: 'Add at least one pantry item' });
     }
 
-    // Optional: dedupe and cap for quality
+    // Dedupe + cap to keep prompts tidy
     const pantryForModel = [...new Set(cleanedPantry)].slice(0, 50);
 
-    // Compose prompt for the model (use ONLY validated pantry; no fallbacks)
+    // Prompt (validated pantry only; no fallbacks)
     const prompt = `
 You are a certified nutritionist and chef. Generate 3 Halloween-themed meal recipes using ONLY items from the pantry list whenever possible, and simple staples if absolutely needed.
 
@@ -92,7 +104,6 @@ User details:
 - appliances: ${Array.isArray(appliances)? appliances.join(', ') : (appliances || '')}
     `.trim();
 
-    // Ask for JSON back. We parse response.output_text as JSON.
     const response = await client.responses.create({
       model: 'gpt-4o-mini',
       instructions: 'You output clean, strict JSON and follow nutrition best-practices. Theme is Halloween.',
@@ -103,11 +114,11 @@ User details:
     let data;
     try {
       data = JSON.parse(jsonText);
-    } catch (e) {
-      // Try to extract JSON if there is stray text
+    } catch {
       const match = jsonText.match(/\{[\s\S]*\}/);
       if (match) data = JSON.parse(match[0]);
     }
+
     const parsed = ResponseSchema.parse(data);
     res.json(parsed);
   } catch (err) {
@@ -118,5 +129,5 @@ User details:
 
 const PORT = process.env.PORT || 8787;
 app.listen(PORT, () => {
-  console.log(`Spooky backend haunts at http://localhost:${PORT}`);
+  console.log(`Spooky backend haunts at http://localhost:${PORT} (CORS origin: ${allowedOrigin})`);
 });
