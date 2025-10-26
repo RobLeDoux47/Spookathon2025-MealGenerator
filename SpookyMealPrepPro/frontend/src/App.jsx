@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react'
 
-// Point this to your backend in dev: VITE_API_BASE=http://localhost:8787
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8787'
+// In dev, leave VITE_API_BASE undefined so we use a relative path and avoid CORS via same-origin.
+// For production, set VITE_API_BASE to your HTTPS API URL, e.g. https://api.your-domain.com
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').trim()
 
 function Stat({label, value}){
   return (
@@ -56,7 +57,9 @@ export default function App(){
 
     setLoading(true)
     try{
-      const resp = await fetch(`${API_BASE}/api/recipes`, {
+      // Use relative path unless API_BASE is provided (prod)
+      const base = API_BASE || ''
+      const resp = await fetch(`${base}/api/recipes`, {
         method: 'POST',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ unitSystem, height, weight, goal, activity, pantry, prefs, spice, appliances }),
