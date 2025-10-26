@@ -147,6 +147,20 @@ export default function App(){
           </div>
         </section>
 
+        <div className="flex justify-center">
+          <img 
+            src={
+              loading 
+                ? "/images/MacroBotTwoCooking-removebg-preview.png" 
+                : meals.length > 0 
+                  ? "/images/MacroBotThreeDone-removebg-preview.png" 
+                  : "/images/MacroBotOne-removebg-preview.png"
+            }
+            alt="Chef Robot" 
+            className="w-64 h-64 object-contain"
+          />
+        </div>
+
         {meals.length>0 && (
           <section className="glass rounded-2xl p-4 grid gap-4">
             <h2 className="title text-xl">Today's Meal Plan</h2>
